@@ -18,14 +18,14 @@ export default function App() {
   const [roomData, setRoomData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Keep a ref to playerId so Firebase callbacks never capture a stale closure
+  // Keep a ref to playerId so callbacks never capture a stale closure
   const playerIdRef = useRef(playerId);
   useEffect(() => { playerIdRef.current = playerId; }, [playerId]);
 
-  // Restore local session on load
+  // Restore local session from sessionStorage (tab-isolated session storage) on load
   useEffect(() => {
-    const savedRoom = localStorage.getItem("deshi_spyfall_room");
-    const savedPlayer = localStorage.getItem("deshi_spyfall_player");
+    const savedRoom = sessionStorage.getItem("deshi_spyfall_room");
+    const savedPlayer = sessionStorage.getItem("deshi_spyfall_player");
     if (savedRoom && savedPlayer) {
       setRoomCode(savedRoom);
       setPlayerId(savedPlayer);
@@ -45,7 +45,79 @@ export default function App() {
     try {
       bc = new BroadcastChannel(`deshi_spyfall_${roomCode}`);
       bc.onmessage = (event) => {
-        if (event.data) setRoomData(event.data);
+        const msg = event.data;
+        if (!msg || !msg.type) return;
+
+        // If Firebase is active, we let Firebase handle synchronization
+        if (database) return;
+
+        // Offline / local BroadcastChannel synchronization logic:
+        switch (msg.type) {
+          case "JOIN_REQUEST": {
+            // Only the Host handles join requests and updates the master roomData
+            if (roomData && roomData.hostId === playerIdRef.current) {
+              const updatedRoomData = {
+                ...roomData,
+                players: {
+                  ...roomData.players,
+                  [msg.player.id]: msg.player
+                }
+              };
+              setRoomData(updatedRoomData);
+              // Broadcast the new master state to everyone
+              bc.postMessage({ type: "ROOM_UPDATE", roomData: updatedRoomData });
+            }
+            break;
+          }
+          case "ROOM_UPDATE": {
+            // Everyone accepts the Host's authoritative state
+            setRoomData(msg.roomData);
+            break;
+          }
+          case "VOTE_CAST": {
+            // When someone votes, if we are the Host, update the master state
+            if (roomData && roomData.hostId === playerIdRef.current) {
+              const updatedRoomData = {
+                ...roomData,
+                players: {
+                  ...roomData.players,
+                  [msg.voterId]: {
+                    ...roomData.players[msg.voterId],
+                    hasVoted: true,
+                    voteFor: msg.targetId
+                  }
+                }
+              };
+              // Check if all voted
+              const playersArr = Object.values(updatedRoomData.players);
+              const allVoted = playersArr.every((p) => p.hasVoted);
+              if (allVoted) {
+                // Host finalizes voting
+                handleFinalizeVoting(updatedRoomData);
+              } else {
+                setRoomData(updatedRoomData);
+                bc.postMessage({ type: "ROOM_UPDATE", roomData: updatedRoomData });
+              }
+            }
+            break;
+          }
+          case "LEAVE": {
+            // Remove the player from list
+            if (roomData && roomData.hostId === playerIdRef.current) {
+              const updatedPlayers = { ...roomData.players };
+              delete updatedPlayers[msg.playerId];
+              const updatedRoomData = {
+                ...roomData,
+                players: updatedPlayers
+              };
+              setRoomData(updatedRoomData);
+              bc.postMessage({ type: "ROOM_UPDATE", roomData: updatedRoomData });
+            }
+            break;
+          }
+          default:
+            break;
+        }
       };
     } catch (e) {}
 
@@ -77,14 +149,14 @@ export default function App() {
       if (bc) bc.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomCode]);
+  }, [roomCode, roomData]);
 
-  // Broadcast room state changes to other tabs (local dev multi-tab sync)
-  const broadcastRoomState = (newData, code = roomCode) => {
+  // Broadcast helper when updating room state
+  const broadcastRoomUpdate = (newData) => {
     try {
-      if (code) {
-        const bc = new BroadcastChannel(`deshi_spyfall_${code}`);
-        bc.postMessage(newData);
+      if (roomCode) {
+        const bc = new BroadcastChannel(`deshi_spyfall_${roomCode}`);
+        bc.postMessage({ type: "ROOM_UPDATE", roomData: newData });
         bc.close();
       }
     } catch (e) {}
@@ -92,7 +164,9 @@ export default function App() {
 
   const updateRoomState = (newData, code = roomCode) => {
     setRoomData(newData);
-    broadcastRoomState(newData, code);
+    if (!database) {
+      broadcastRoomUpdate(newData);
+    }
   };
 
   // ─── Create Room ──────────────────────────────────────────────────────────
@@ -116,16 +190,14 @@ export default function App() {
       },
     };
 
-    // Update local state immediately
     updateRoomState(initialRoomData, newRoomCode);
     setRoomCode(newRoomCode);
     setPlayerId(newPlayerId);
     playerIdRef.current = newPlayerId;
-    localStorage.setItem("deshi_spyfall_room", newRoomCode);
-    localStorage.setItem("deshi_spyfall_player", newPlayerId);
+    sessionStorage.setItem("deshi_spyfall_room", newRoomCode);
+    sessionStorage.setItem("deshi_spyfall_player", newPlayerId);
     setLoading(false);
 
-    // Sync to Firebase in background
     safeSet(`rooms/${newRoomCode}`, initialRoomData);
   };
 
@@ -133,14 +205,6 @@ export default function App() {
   const handleJoinRoom = async (codeToJoin, playerName) => {
     setLoading(true);
     const newPlayerId = playerIdRef.current || generatePlayerId();
-
-    // Fetch existing room data from Firebase first so we have all current players
-    let existingRoomData = await safeGet(`rooms/${codeToJoin}`);
-
-    // Fall back to current roomData if offline and already loaded
-    if (!existingRoomData && roomData) {
-      existingRoomData = roomData;
-    }
 
     const newPlayerData = {
       id: newPlayerId,
@@ -150,35 +214,50 @@ export default function App() {
       voteFor: null,
     };
 
-    const updatedRoomData = {
-      ...(existingRoomData || { hostId: newPlayerId, status: "lobby", roundDuration: 480 }),
-      players: {
-        ...(existingRoomData?.players || {}),
-        [newPlayerId]: newPlayerData,
-      },
-    };
-
-    // Optimistic local update
-    updateRoomState(updatedRoomData, codeToJoin);
     setRoomCode(codeToJoin);
     setPlayerId(newPlayerId);
     playerIdRef.current = newPlayerId;
-    localStorage.setItem("deshi_spyfall_room", codeToJoin);
-    localStorage.setItem("deshi_spyfall_player", newPlayerId);
-    setLoading(false);
+    sessionStorage.setItem("deshi_spyfall_room", codeToJoin);
+    sessionStorage.setItem("deshi_spyfall_player", newPlayerId);
 
-    // Sync player to Firebase
-    safeSet(`rooms/${codeToJoin}/players/${newPlayerId}`, newPlayerData);
+    if (database) {
+      let existingRoomData = await safeGet(`rooms/${codeToJoin}`);
+      const updatedRoomData = {
+        ...(existingRoomData || { hostId: newPlayerId, status: "lobby", roundDuration: 480 }),
+        players: {
+          ...(existingRoomData?.players || {}),
+          [newPlayerId]: newPlayerData,
+        },
+      };
+      updateRoomState(updatedRoomData, codeToJoin);
+      setLoading(false);
+      safeSet(`rooms/${codeToJoin}/players/${newPlayerId}`, newPlayerData);
+    } else {
+      // Offline / Local Broadcast Mode: Send join request to host tab
+      try {
+        const bc = new BroadcastChannel(`deshi_spyfall_${codeToJoin}`);
+        bc.postMessage({ type: "JOIN_REQUEST", player: newPlayerData });
+        bc.close();
+      } catch (e) {}
+      setLoading(false);
+    }
   };
 
   // ─── Leave Room ───────────────────────────────────────────────────────────
   const handleLeaveRoom = () => {
-    // Remove player from Firebase if possible
     if (roomCode && playerId) {
-      safeUpdate(`rooms/${roomCode}/players/${playerId}`, null);
+      if (database) {
+        safeUpdate(`rooms/${roomCode}/players/${playerId}`, null);
+      } else {
+        try {
+          const bc = new BroadcastChannel(`deshi_spyfall_${roomCode}`);
+          bc.postMessage({ type: "LEAVE", playerId: playerId });
+          bc.close();
+        } catch (e) {}
+      }
     }
-    localStorage.removeItem("deshi_spyfall_room");
-    localStorage.removeItem("deshi_spyfall_player");
+    sessionStorage.removeItem("deshi_spyfall_room");
+    sessionStorage.removeItem("deshi_spyfall_player");
     setRoomCode(null);
     setPlayerId(null);
     setRoomData(null);
@@ -247,21 +326,30 @@ export default function App() {
   const handleCastVote = (targetPlayerId) => {
     if (!roomCode || !playerIdRef.current) return;
 
-    const updatedPlayers = {
-      ...roomData.players,
-      [playerIdRef.current]: {
-        ...roomData.players[playerIdRef.current],
+    if (database) {
+      const updatedPlayers = {
+        ...roomData.players,
+        [playerIdRef.current]: {
+          ...roomData.players[playerIdRef.current],
+          hasVoted: true,
+          voteFor: targetPlayerId,
+        },
+      };
+      const nextRoomData = { ...roomData, players: updatedPlayers };
+      updateRoomState(nextRoomData);
+
+      safeUpdate(`rooms/${roomCode}/players/${playerIdRef.current}`, {
         hasVoted: true,
         voteFor: targetPlayerId,
-      },
-    };
-    const nextRoomData = { ...roomData, players: updatedPlayers };
-    updateRoomState(nextRoomData);
-
-    safeUpdate(`rooms/${roomCode}/players/${playerIdRef.current}`, {
-      hasVoted: true,
-      voteFor: targetPlayerId,
-    });
+      });
+    } else {
+      // Offline mode: send vote to Host tab
+      try {
+        const bc = new BroadcastChannel(`deshi_spyfall_${roomCode}`);
+        bc.postMessage({ type: "VOTE_CAST", voterId: playerIdRef.current, targetId: targetPlayerId });
+        bc.close();
+      } catch (e) {}
+    }
   };
 
   // ─── Spy Location Guess ───────────────────────────────────────────────────
@@ -289,36 +377,33 @@ export default function App() {
     const caughtSpy =
       votingSummary.mostVotedPlayerId === currentRoom.spyId && !votingSummary.isTie;
 
-    // If spy is caught, give them a chance to guess — don't go to results yet
-    // (spy can still submit a location guess from VotingScreen)
-    // Only auto-go to results when spy is NOT caught (citizens lose)
     const nextStatus = caughtSpy ? "voting" : "results";
     const winner = caughtSpy ? null : "spy";
 
-    // If spy is caught: keep status "voting" so the spy can see the guess modal
-    // Add a caughtSpyId field so VotingScreen shows the guess modal to the spy
     const nextRoomData = {
       ...currentRoom,
       status: caughtSpy ? "voting" : "results",
       winner,
       caughtSpyId: caughtSpy ? currentRoom.spyId : null,
     };
-    setRoomData(nextRoomData);
-    broadcastRoomState(nextRoomData);
+    
+    // Update local state and broadcast
+    updateRoomState(nextRoomData);
 
-    const updatePayload = {
-      status: nextStatus,
-      winner,
-      caughtSpyId: caughtSpy ? currentRoom.spyId : null,
-    };
-    safeUpdate(`rooms/${roomCode}`, updatePayload);
+    if (database) {
+      const updatePayload = {
+        status: nextStatus,
+        winner,
+        caughtSpyId: caughtSpy ? currentRoom.spyId : null,
+      };
+      safeUpdate(`rooms/${roomCode}`, updatePayload);
+    }
   };
 
   // ─── Play Again ───────────────────────────────────────────────────────────
   const handlePlayAgain = () => {
     if (!roomCode || !roomData?.players) return;
 
-    // Clear all game-round state from every player
     const resetPlayers = {};
     Object.entries(roomData.players).forEach(([pId, p]) => {
       resetPlayers[pId] = {

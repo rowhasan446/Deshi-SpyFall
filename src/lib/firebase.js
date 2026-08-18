@@ -24,12 +24,15 @@ let database = null;
 
 try {
   app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  if (isValidDatabaseURL(firebaseConfig.databaseURL)) {
+  const isDemo = !firebaseConfig.apiKey || firebaseConfig.apiKey.includes("Demo");
+  if (isValidDatabaseURL(firebaseConfig.databaseURL) && !isDemo) {
     database = getDatabase(app);
   } else {
-    console.info("Deshi Spyfall: Firebase RTDB not configured — running in local demo mode.");
+    database = null;
+    console.info("Deshi Spyfall: Firebase RTDB not configured or using demo key — running in local demo mode.");
   }
 } catch (e) {
+  database = null;
   console.warn("Firebase initialization error:", e.message);
 }
 
