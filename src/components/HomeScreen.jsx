@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Users, PlusCircle, LogIn, ArrowLeft } from "lucide-react";
+import { Users, PlusCircle, LogIn, ArrowLeft, HelpCircle } from "lucide-react";
 import Image from "next/image";
 import { getSoundEngine } from "../lib/sounds";
 
-export default function HomeScreen({ onCreateRoom, onJoinRoom }) {
+export default function HomeScreen({ onCreateRoom, onJoinRoom, onOpenRules }) {
   const [mode, setMode] = useState("menu");
   const [playerName, setPlayerName] = useState("");
   const [roomCodeInput, setRoomCodeInput] = useState("");
@@ -16,7 +16,6 @@ export default function HomeScreen({ onCreateRoom, onJoinRoom }) {
   const goBack = () => { sfx.play("back"); setError(""); setMode("menu"); };
 
   const handleInputFocus = (e) => {
-    // Smoothly scroll focused input into view on mobile screens when virtual keyboard pops up
     setTimeout(() => {
       e.target.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 300);
@@ -76,6 +75,15 @@ export default function HomeScreen({ onCreateRoom, onJoinRoom }) {
             <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             Join Room
           </button>
+          
+          <button
+            onClick={() => { sfx.play("click"); onOpenRules?.(); }}
+            className="deshi-btn-outline w-full text-xs font-bold py-3 text-slate-700 dark:text-slate-200"
+          >
+            <HelpCircle className="w-4 h-4 text-deshi-blue dark:text-blue-400" />
+            📖 How to Play / কীভাবে খেলবেন?
+          </button>
+
           <div className="flex gap-3 pt-1">
             <div className="flex-1 bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-center text-xs text-slate-500 dark:text-slate-400 font-medium shadow-sm">
               🏏 12 Locations

@@ -11,12 +11,15 @@ import GameScreen from "../components/GameScreen";
 import VotingScreen from "../components/VotingScreen";
 import ResultsScreen from "../components/ResultsScreen";
 import SoundEffects from "../components/SoundEffects";
+import InstructionsModal from "../components/InstructionsModal";
+import { Home, HelpCircle } from "lucide-react";
 
 export default function App() {
   const [roomCode, setRoomCode] = useState(null);
   const [playerId, setPlayerId] = useState(null);
   const [roomData, setRoomData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isRulesOpen, setIsRulesOpen] = useState(false);
 
   // Keep a ref to playerId so callbacks never capture a stale closure
   const playerIdRef = useRef(playerId);
@@ -454,8 +457,36 @@ export default function App() {
     <div className="w-full">
       <SoundEffects />
 
+      {/* Top Quick Navigation Bar (Home & Rules buttons) */}
+      <div className="w-full flex items-center justify-between mb-3 px-1">
+        <button
+          onClick={handleLeaveRoom}
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-deshi-blue dark:hover:text-blue-400 bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-sm transition-all cursor-pointer"
+          title="Return to Home Screen"
+        >
+          <Home className="w-3.5 h-3.5" />
+          <span>Home</span>
+        </button>
+
+        <button
+          onClick={() => setIsRulesOpen(true)}
+          className="flex items-center gap-1.5 text-xs font-bold text-deshi-blue dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 px-3 py-1.5 rounded-xl shadow-sm hover:bg-blue-100 dark:hover:bg-blue-900/80 transition-all cursor-pointer"
+          title="View Game Rules & Instructions"
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+          <span>Rules / নিয়মাবলী</span>
+        </button>
+      </div>
+
+      <InstructionsModal isOpen={isRulesOpen} onClose={() => setIsRulesOpen(false)} />
+
       {(!roomCode || !roomData) && (
-        <HomeScreen onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} loading={loading} />
+        <HomeScreen
+          onCreateRoom={handleCreateRoom}
+          onJoinRoom={handleJoinRoom}
+          loading={loading}
+          onOpenRules={() => setIsRulesOpen(true)}
+        />
       )}
 
       {roomCode && roomData && currentStatus === "lobby" && (

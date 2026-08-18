@@ -38,14 +38,13 @@
   z-index: 0;
   background-image: url('/bg-art.png');
   background-size: cover;
-  background-position: center;
-  opacity: 0.10;
+  opacity: 0.28;
   mix-blend-mode: multiply;
   transition: opacity 0.3s ease;
 }
 
 html.dark .bg-rickshaw-art {
-  opacity: 0.05;
+  opacity: 0.18;
   mix-blend-mode: overlay;
   filter: invert(1);
 }
