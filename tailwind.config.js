@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,21 +10,21 @@ module.exports = {
     extend: {
       colors: {
         deshi: {
-          blue:      "#0F4C81",
-          "blue-dark": "#0A3357",
+          blue:        "#0F4C81",
+          "blue-dark":  "#0A3357",
           "blue-light": "#2563EB",
-          red:       "#DC2626",
-          "red-dark":  "#991B1B",
-          "red-light": "#EF4444",
-          green:     "#006A4E",
-          gold:      "#D97706",
+          red:         "#DC2626",
+          "red-dark":   "#991B1B",
+          "red-light":  "#EF4444",
+          green:       "#006A4E",
+          gold:        "#D97706",
         },
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
       },
       animation: {
-        "fade-in":  "fadeIn 0.35s ease-out forwards",
+        "fade-in":   "fadeIn 0.35s ease-out forwards",
         "countdown": "countdownPulse 1s ease-in-out infinite",
       },
       scale: {
