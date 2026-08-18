@@ -44,6 +44,15 @@ export default function App() {
     let bc;
     try {
       bc = new BroadcastChannel(`deshi_spyfall_${roomCode}`);
+
+      // If offline and we just joined (hostId is empty), send JOIN_REQUEST to host
+      if (!database && roomData && roomData.hostId === "") {
+        const myPlayer = roomData.players?.[playerIdRef.current];
+        if (myPlayer) {
+          bc.postMessage({ type: "JOIN_REQUEST", player: myPlayer });
+        }
+      }
+
       bc.onmessage = (event) => {
         const msg = event.data;
         if (!msg || !msg.type) return;
@@ -233,12 +242,17 @@ export default function App() {
       setLoading(false);
       safeSet(`rooms/${codeToJoin}/players/${newPlayerId}`, newPlayerData);
     } else {
-      // Offline / Local Broadcast Mode: Send join request to host tab
-      try {
-        const bc = new BroadcastChannel(`deshi_spyfall_${codeToJoin}`);
-        bc.postMessage({ type: "JOIN_REQUEST", player: newPlayerData });
-        bc.close();
-      } catch (e) {}
+      // Offline / Local Broadcast Mode: Set initial state with self in lobby
+      // and let the BroadcastChannel listener send JOIN_REQUEST to host once it's open
+      const initialJoinerRoomData = {
+        hostId: "", // Will be updated by Host's ROOM_UPDATE response
+        status: "lobby",
+        roundDuration: 480,
+        players: {
+          [newPlayerId]: newPlayerData
+        }
+      };
+      updateRoomState(initialJoinerRoomData, codeToJoin);
       setLoading(false);
     }
   };
