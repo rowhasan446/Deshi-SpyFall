@@ -10,9 +10,10 @@ import RoleRevealScreen from "../components/RoleRevealScreen";
 import GameScreen from "../components/GameScreen";
 import VotingScreen from "../components/VotingScreen";
 import ResultsScreen from "../components/ResultsScreen";
+import WelcomeScreen from "../components/WelcomeScreen";
 import SoundEffects from "../components/SoundEffects";
 import InstructionsModal from "../components/InstructionsModal";
-import { Home, HelpCircle } from "lucide-react";
+import { Home, HelpCircle, Sparkles } from "lucide-react";
 
 export default function App() {
   const [roomCode, setRoomCode] = useState(null);
@@ -20,6 +21,9 @@ export default function App() {
   const [roomData, setRoomData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [isReplayWelcome, setIsReplayWelcome] = useState(false);
+
 
   // Keep a ref to playerId so callbacks never capture a stale closure
   const playerIdRef = useRef(playerId);
@@ -460,11 +464,27 @@ export default function App() {
   // ─── Render ───────────────────────────────────────────────────────────────
   const currentStatus = roomData?.status || "home";
 
+  const handleReplayWelcome = () => {
+    setIsReplayWelcome(true);
+    setShowWelcome(true);
+  };
+
   return (
     <div className="w-full">
       <SoundEffects />
 
-      {/* Top Quick Navigation Bar (Home & Rules buttons) */}
+      {/* Fullscreen Bangladeshi Traditional Welcome / Splash Loader Screen */}
+      {showWelcome && (
+        <WelcomeScreen
+          isReplay={isReplayWelcome}
+          onEnter={() => {
+            setShowWelcome(false);
+            setIsReplayWelcome(false);
+          }}
+        />
+      )}
+
+      {/* Top Quick Navigation Bar (Home, Rules & Welcome Intro buttons) */}
       <div className="w-full flex items-center justify-between mb-3 px-1">
         <button
           onClick={handleLeaveRoom}
@@ -475,17 +495,29 @@ export default function App() {
           <span>Home</span>
         </button>
 
-        <button
-          onClick={() => setIsRulesOpen(true)}
-          className="flex items-center gap-1.5 text-xs font-bold text-deshi-blue dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 px-3 py-1.5 rounded-xl shadow-sm hover:bg-blue-100 dark:hover:bg-blue-900/80 transition-all cursor-pointer"
-          title="View Game Rules & Instructions"
-        >
-          <HelpCircle className="w-3.5 h-3.5" />
-          <span>Rules / নিয়মাবলী</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleReplayWelcome}
+            className="flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 px-2.5 py-1.5 rounded-xl shadow-sm hover:bg-amber-100 dark:hover:bg-amber-900/80 transition-all cursor-pointer"
+            title="Watch Welcome & Intro Animation"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>স্বাগতম</span>
+          </button>
+
+          <button
+            onClick={() => setIsRulesOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-bold text-deshi-blue dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 px-3 py-1.5 rounded-xl shadow-sm hover:bg-blue-100 dark:hover:bg-blue-900/80 transition-all cursor-pointer"
+            title="View Game Rules & Instructions"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>Rules / নিয়মাবলী</span>
+          </button>
+        </div>
       </div>
 
       <InstructionsModal isOpen={isRulesOpen} onClose={() => setIsRulesOpen(false)} />
+
 
       {(!roomCode || !roomData) && (
         <HomeScreen

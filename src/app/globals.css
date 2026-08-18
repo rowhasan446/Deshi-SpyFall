@@ -101,6 +101,31 @@ html.dark .deshi-btn-outline {
   50%       { transform: scale(1.06); }
 }
 
+@keyframes alponaSpinClockwise {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes alponaSpinCounter {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+
+@keyframes alponaPulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.3)); }
+  50%      { transform: scale(1.04); opacity: 1; filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.6)); }
+}
+
+@keyframes shimmerText {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-7px); }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.35s ease-out forwards;
 }
@@ -112,6 +137,32 @@ html.dark .deshi-btn-outline {
 .animate-countdown {
   animation: countdownPulse 1s ease-in-out infinite;
 }
+
+.animate-alpona-clockwise {
+  animation: alponaSpinClockwise 45s linear infinite;
+}
+
+.animate-alpona-counter {
+  animation: alponaSpinCounter 60s linear infinite;
+}
+
+.animate-alpona-pulse {
+  animation: alponaPulse 3.5s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: floatGentle 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #006A4E 0%, #F59E0B 50%, #DC2626 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmerText 4s linear infinite;
+}
+
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
