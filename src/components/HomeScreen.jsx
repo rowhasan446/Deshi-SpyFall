@@ -16,9 +16,13 @@ export default function HomeScreen({ onCreateRoom, onJoinRoom, onOpenRules }) {
   const goBack = () => { sfx.play("back"); setError(""); setMode("menu"); };
 
   const handleInputFocus = (e) => {
+    const target = e.target;
     setTimeout(() => {
-      e.target.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 300);
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+    setTimeout(() => {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 450);
   };
 
   const handleCreateSubmit = (e) => {

@@ -144,7 +144,7 @@ export default function App() {
             setRoomData(data);
 
             // Auto-finalize voting once all players have voted (host only)
-            if (data.status === "voting" && data.players) {
+            if (data.status === "voting" && data.players && !data.caughtSpyId && !data.spyGuess) {
               const playersArr = Object.values(data.players);
               const allVoted = playersArr.every((p) => p.hasVoted);
               if (allVoted && data.hostId === playerIdRef.current) {
@@ -371,18 +371,20 @@ export default function App() {
 
   // ─── Spy Location Guess ───────────────────────────────────────────────────
   const handleSpyGuessLocation = (guessedLocationName) => {
-    if (!roomCode) return;
+    if (!roomCode || !roomData) return;
     const isCorrect = guessedLocationName === roomData?.location?.name;
 
     const nextRoomData = {
       ...roomData,
       status: "results",
+      caughtSpyId: null,
       spyGuess: guessedLocationName,
       winner: isCorrect ? "spy" : "citizens",
     };
     updateRoomState(nextRoomData);
     safeUpdate(`rooms/${roomCode}`, {
       status: "results",
+      caughtSpyId: null,
       spyGuess: guessedLocationName,
       winner: isCorrect ? "spy" : "citizens",
     });
@@ -390,6 +392,11 @@ export default function App() {
 
   // ─── Finalize Voting ──────────────────────────────────────────────────────
   const handleFinalizeVoting = (currentRoom) => {
+    // Guard against re-entrancy if already resolved or waiting for spy guess
+    if (!currentRoom || currentRoom.status === "results" || currentRoom.spyGuess || currentRoom.caughtSpyId) {
+      return;
+    }
+
     const votingSummary = calculateVotes(currentRoom.players);
     const caughtSpy =
       votingSummary.mostVotedPlayerId === currentRoom.spyId && !votingSummary.isTie;
@@ -399,7 +406,7 @@ export default function App() {
 
     const nextRoomData = {
       ...currentRoom,
-      status: caughtSpy ? "voting" : "results",
+      status: nextStatus,
       winner,
       caughtSpyId: caughtSpy ? currentRoom.spyId : null,
     };

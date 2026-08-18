@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Vote, CheckCircle, MapPin } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Vote, CheckCircle, MapPin, Clock } from "lucide-react";
 import { LOCATIONS } from "../data/locations";
 import { getSoundEngine } from "../lib/sounds";
 
@@ -13,6 +13,8 @@ export default function VotingScreen({
 }) {
   const [selectedTargetId, setSelectedTargetId] = useState(null);
   const [selectedLocationGuess, setSelectedLocationGuess] = useState("");
+  const [isSubmittingGuess, setIsSubmittingGuess] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(roomData?.roundDuration || 480);
   const sfx = getSoundEngine();
 
   const player = roomData?.players?.[currentPlayerId];
@@ -27,10 +29,36 @@ export default function VotingScreen({
   const isSpyCaught = !!caughtSpyId;
   const iCaughtSpy = currentPlayerId === caughtSpyId;
 
+  // Live timer on voting screen
+  useEffect(() => {
+    const startTimeNum = typeof roomData?.startTime === "number" ? roomData.startTime : Date.now();
+    const durationSec = roomData?.roundDuration || 480;
+
+    const calcTime = () => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTimeNum) / 1000);
+      return Math.max(0, durationSec - elapsed);
+    };
+
+    setTimeLeft(calcTime());
+    const interval = setInterval(() => {
+      setTimeLeft(calcTime());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [roomData?.startTime, roomData?.roundDuration]);
+
+  const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+  const critical = timeLeft <= 60;
+
   const handleInputFocus = (e) => {
+    const target = e.target;
     setTimeout(() => {
-      e.target.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 300);
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+    setTimeout(() => {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 450);
   };
 
   const handleVoteSubmit = () => {
@@ -40,24 +68,37 @@ export default function VotingScreen({
   };
 
   const handleSpyGuessSubmit = () => {
-    if (!selectedLocationGuess) return;
+    if (!selectedLocationGuess || isSubmittingGuess) return;
+    setIsSubmittingGuess(true);
     sfx.play("reveal");
     onSpyGuessLocation(selectedLocationGuess);
   };
 
   return (
     <div className="w-full flex flex-col items-center gap-5 py-4 animate-fadeIn">
+
+      {/* Live Timer Indicator Bar on Voting Screen */}
+      <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-2">
+          <Clock className={`w-4 h-4 ${critical ? "text-deshi-red" : "text-deshi-blue dark:text-blue-400"}`} />
+          <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Round Time Remaining</span>
+        </div>
+        <span className={`font-mono font-black text-lg ${critical ? "text-deshi-red animate-pulse" : "text-slate-900 dark:text-white"}`}>
+          {fmt(timeLeft)}
+        </span>
+      </div>
+
       {/* Vote Banner Header */}
       <div className="deshi-card-red w-full text-center space-y-2 border-red-200 dark:border-red-900/40">
         <div className="inline-flex items-center justify-center p-3 bg-red-50 dark:bg-red-950/60 border border-red-100 dark:border-red-900 rounded-2xl text-deshi-red mb-1">
           <Vote className="w-6 h-6" />
         </div>
         <h2 className="text-2xl font-black text-slate-900 dark:text-white">
-          {isSpyCaught ? "Spy Caught! Last Chance 🎯" : "Who is the Spy? Vote Now!"}
+          {isSpyCaught ? "Spy Caught! Final Choice 🎯" : "Who is the Spy? Vote Now!"}
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
           {isSpyCaught
-            ? "The Spy has one chance to guess the location and still win!"
+            ? "The Spy has exactly ONE chance to guess the location to win!"
             : "Select who you suspect. Votes sync in real time across phones."}
         </p>
         {!isSpyCaught && (
@@ -77,13 +118,14 @@ export default function VotingScreen({
                 <span>You were caught! Guess the Location to win</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                If you guess the correct location, you still win! Choose wisely.
+                You can select a location ONLY ONCE. If correct, you steal the win!
               </p>
               <select
                 value={selectedLocationGuess}
+                disabled={isSubmittingGuess}
                 onChange={(e) => setSelectedLocationGuess(e.target.value)}
                 onFocus={handleInputFocus}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-deshi-blue dark:focus:border-blue-400 font-semibold"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-deshi-blue dark:focus:border-blue-400 font-semibold disabled:opacity-50"
               >
                 <option value="">-- Select Location --</option>
                 {LOCATIONS.map((loc) => (
@@ -94,14 +136,14 @@ export default function VotingScreen({
               </select>
               <button
                 onClick={handleSpyGuessSubmit}
-                disabled={!selectedLocationGuess}
+                disabled={!selectedLocationGuess || isSubmittingGuess}
                 className={`w-full ${
-                  !selectedLocationGuess
+                  !selectedLocationGuess || isSubmittingGuess
                     ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-3.5 rounded-2xl font-bold text-sm cursor-not-allowed"
                     : "deshi-btn-blue"
                 }`}
               >
-                Submit Location Guess 🎯
+                {isSubmittingGuess ? "Submitting Guess..." : "Submit Location Guess 🎯"}
               </button>
             </>
           ) : (
@@ -127,13 +169,14 @@ export default function VotingScreen({
                 <span>Spy Option: Guess the Location now</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Confident about the location? Guess it directly and win before the vote resolves!
+                Guess the location directly and win! You can choose ONLY ONCE.
               </p>
               <select
                 value={selectedLocationGuess}
+                disabled={isSubmittingGuess}
                 onChange={(e) => setSelectedLocationGuess(e.target.value)}
                 onFocus={handleInputFocus}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-deshi-blue dark:focus:border-blue-400 font-semibold"
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-deshi-blue dark:focus:border-blue-400 font-semibold disabled:opacity-50"
               >
                 <option value="">-- Select Location --</option>
                 {LOCATIONS.map((loc) => (
@@ -144,14 +187,14 @@ export default function VotingScreen({
               </select>
               <button
                 onClick={handleSpyGuessSubmit}
-                disabled={!selectedLocationGuess}
+                disabled={!selectedLocationGuess || isSubmittingGuess}
                 className={`w-full text-sm ${
-                  !selectedLocationGuess
+                  !selectedLocationGuess || isSubmittingGuess
                     ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-3.5 rounded-2xl font-bold cursor-not-allowed"
                     : "deshi-btn-blue"
                 }`}
               >
-                Submit Location Guess 🎯
+                {isSubmittingGuess ? "Submitting Guess..." : "Submit Location Guess 🎯"}
               </button>
               <div className="relative flex items-center gap-3">
                 <div className="flex-1 border-t border-slate-200 dark:border-slate-700" />

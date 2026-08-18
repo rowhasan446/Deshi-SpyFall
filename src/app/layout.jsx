@@ -71,7 +71,7 @@ export default function RootLayout({ children }) {
         </header>
 
         {/* Main content with generous mobile padding for virtual keyboard scroll */}
-        <main className="relative z-10 flex-1 flex flex-col justify-center items-center p-4 pb-32 sm:pb-8 max-w-md mx-auto w-full overflow-y-auto">
+        <main className="relative z-10 flex-1 flex flex-col justify-center items-center p-4 pb-[60vh] sm:pb-12 max-w-md mx-auto w-full overflow-y-auto">
           {children}
         </main>
 
