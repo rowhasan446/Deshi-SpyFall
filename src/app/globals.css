@@ -46,9 +46,9 @@
 }
 
 html.dark .bg-rickshaw-art {
-  opacity: 0.35;
+  opacity: 0.18;
   mix-blend-mode: screen;
-  filter: invert(1) brightness(1.2);
+  filter: invert(1) blur(3px) brightness(0.95);
 }
 
 /* ───────── Card Variants ───────── */
