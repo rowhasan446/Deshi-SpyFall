@@ -75,8 +75,8 @@ export default function RootLayout({ children }) {
           {children}
         </main>
 
-        {/* Footer */}
-        <footer className="relative z-10 w-full text-center py-3 text-xs font-semibold text-slate-400 dark:text-slate-500 border-t border-slate-200/60 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm shrink-0">
+        {/* Sticky Footer */}
+        <footer className="sticky bottom-0 z-30 w-full text-center py-2.5 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 border-t border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-lg transition-colors duration-300 shrink-0">
           Developed by{" "}
           <span className="font-extrabold text-deshi-blue dark:text-blue-400">Rownak</span>
         </footer>

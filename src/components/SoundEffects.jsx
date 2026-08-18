@@ -18,7 +18,7 @@ export default function SoundEffects() {
   return (
     <button
       onClick={toggle}
-      className="fixed bottom-14 right-4 z-50 p-2.5 bg-white border border-slate-200 rounded-full text-slate-500 hover:text-deshi-blue hover:border-blue-200 shadow-md transition-all"
+      className="fixed bottom-14 right-4 z-50 p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-500 dark:text-slate-300 hover:text-deshi-blue dark:hover:text-blue-400 shadow-lg transition-all cursor-pointer"
       title={muted ? "Unmute Sounds" : "Mute Sounds"}
       aria-label={muted ? "Unmute Sounds" : "Mute Sounds"}
     >
