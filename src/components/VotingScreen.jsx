@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Vote, CheckCircle, MapPin, Clock } from "lucide-react";
+import { Vote, CheckCircle, MapPin, Clock, Target } from "lucide-react";
 import { LOCATIONS } from "../data/locations";
 import { getSoundEngine } from "../lib/sounds";
 
@@ -29,22 +29,12 @@ export default function VotingScreen({
   const isSpyCaught = !!caughtSpyId;
   const iCaughtSpy = currentPlayerId === caughtSpyId;
 
-  // Live timer on voting screen
   useEffect(() => {
     const startTimeNum = typeof roomData?.startTime === "number" ? roomData.startTime : Date.now();
     const durationSec = roomData?.roundDuration || 480;
-
-    const calcTime = () => {
-      const now = Date.now();
-      const elapsed = Math.floor((now - startTimeNum) / 1000);
-      return Math.max(0, durationSec - elapsed);
-    };
-
+    const calcTime = () => Math.max(0, durationSec - Math.floor((Date.now() - startTimeNum) / 1000));
     setTimeLeft(calcTime());
-    const interval = setInterval(() => {
-      setTimeLeft(calcTime());
-    }, 1000);
-
+    const interval = setInterval(() => setTimeLeft(calcTime()), 1000);
     return () => clearInterval(interval);
   }, [roomData?.startTime, roomData?.roundDuration]);
 
@@ -53,12 +43,8 @@ export default function VotingScreen({
 
   const handleInputFocus = (e) => {
     const target = e.target;
-    setTimeout(() => {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 150);
-    setTimeout(() => {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 450);
+    setTimeout(() => { target.scrollIntoView({ behavior: "smooth", block: "start" }); }, 150);
+    setTimeout(() => { target.scrollIntoView({ behavior: "smooth", block: "start" }); }, 450);
   };
 
   const handleVoteSubmit = () => {
@@ -74,50 +60,119 @@ export default function VotingScreen({
     onSpyGuessLocation(selectedLocationGuess);
   };
 
-  return (
-    <div className="w-full flex flex-col items-center gap-5 py-4 animate-fadeIn">
+  const avatarColors = [
+    "linear-gradient(135deg, #0F4C81, #2563EB)",
+    "linear-gradient(135deg, #006A4E, #059669)",
+    "linear-gradient(135deg, #7c3aed, #a78bfa)",
+    "linear-gradient(135deg, #c2410c, #f97316)",
+    "linear-gradient(135deg, #0e7490, #06b6d4)",
+    "linear-gradient(135deg, #be185d, #ec4899)",
+  ];
 
-      {/* Live Timer Indicator Bar on Voting Screen */}
-      <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 flex items-center justify-between shadow-sm">
+  return (
+    <div className="w-full flex flex-col items-center gap-4 py-4 animate-fadeIn">
+
+      {/* ── Timer Bar ── */}
+      <div
+        className="w-full flex items-center justify-between px-4 py-3 rounded-2xl"
+        style={{
+          background: critical ? "rgba(254,242,242,0.9)" : "var(--glass-bg)",
+          border: `1px solid ${critical ? "rgba(220,38,38,0.2)" : "var(--glass-border)"}`,
+          boxShadow: "var(--glass-shadow)",
+        }}
+      >
         <div className="flex items-center gap-2">
-          <Clock className={`w-4 h-4 ${critical ? "text-deshi-red" : "text-deshi-blue dark:text-blue-400"}`} />
-          <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Round Time Remaining</span>
+          <Clock
+            className="w-4 h-4"
+            style={{ color: critical ? "var(--clr-red)" : "var(--clr-blue)" }}
+          />
+          <span
+            className="text-xs font-bold text-slate-700 dark:text-slate-300"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+          >
+            Round Time Remaining
+          </span>
         </div>
-        <span className={`font-mono font-black text-lg ${critical ? "text-deshi-red animate-pulse" : "text-slate-900 dark:text-white"}`}>
+        <span
+          className={`font-black text-lg tabular-nums ${critical ? "animate-pulse" : ""}`}
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            color: critical ? "var(--clr-red)" : "var(--clr-blue)",
+          }}
+        >
           {fmt(timeLeft)}
         </span>
       </div>
 
-      {/* Vote Banner Header */}
-      <div className="deshi-card-red w-full text-center space-y-2 border-red-200 dark:border-red-900/40">
-        <div className="inline-flex items-center justify-center p-3 bg-red-50 dark:bg-red-950/60 border border-red-100 dark:border-red-900 rounded-2xl text-deshi-red mb-1">
-          <Vote className="w-6 h-6" />
+      {/* ── Vote Banner Header ── */}
+      <div
+        className="w-full rounded-3xl p-5 text-center space-y-2 relative overflow-hidden"
+        style={{
+          background: isSpyCaught
+            ? "linear-gradient(135deg, rgba(254,242,242,0.95), rgba(254,226,226,0.85))"
+            : "linear-gradient(135deg, rgba(254,242,242,0.95), rgba(254,226,226,0.85))",
+          border: "1.5px solid rgba(220,38,38,0.22)",
+          boxShadow: "0 4px 24px rgba(220,38,38,0.1)",
+        }}
+      >
+        <div className="absolute top-0 left-0 right-0 h-0.5"
+          style={{ background: "linear-gradient(90deg, #b91c1c, #DC2626, #ef4444)" }}
+        />
+        <div
+          className="inline-flex items-center justify-center p-3 rounded-2xl mb-1"
+          style={{
+            background: "rgba(220,38,38,0.1)",
+            border: "1px solid rgba(220,38,38,0.2)",
+          }}
+        >
+          <Vote className="w-6 h-6" style={{ color: "var(--clr-red)" }} />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+        <h2
+          className="text-xl font-black text-slate-900 dark:text-white"
+          style={{ fontFamily: "'Sora', sans-serif" }}
+        >
           {isSpyCaught ? "Spy Caught! Final Choice 🎯" : "Who is the Spy? Vote Now!"}
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        <p className="text-xs text-slate-500 font-medium">
           {isSpyCaught
             ? "The Spy has exactly ONE chance to guess the location to win!"
-            : "Select who you suspect. Votes sync in real time across phones."}
+            : "Select who you suspect. Votes sync in real time."}
         </p>
         {!isSpyCaught && (
-          <div className="pt-2 flex justify-center items-center gap-2 text-xs font-bold text-deshi-blue dark:text-blue-400">
-            <span>Votes Received: {votedPlayersCount} / {totalPlayers}</span>
+          <div className="pt-2 space-y-1.5">
+            <div className="flex items-center justify-center gap-2 text-xs font-bold" style={{ color: "var(--clr-blue)", fontFamily: "'Sora', sans-serif" }}>
+              Votes: {votedPlayersCount} / {totalPlayers}
+            </div>
+            {/* Progress bar */}
+            <div
+              className="w-full h-1.5 rounded-full overflow-hidden"
+              style={{ background: "rgba(220,38,38,0.1)" }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${(votedPlayersCount / totalPlayers) * 100}%`,
+                  background: "linear-gradient(90deg, #b91c1c, #DC2626)",
+                }}
+              />
+            </div>
           </div>
         )}
       </div>
 
-      {/* ── After all votes: Spy gets one last location guess ── */}
+      {/* ── Spy caught: location guess ── */}
       {isSpyCaught && (
         <div className="deshi-card w-full space-y-4">
           {iCaughtSpy ? (
             <>
-              <div className="flex items-center gap-2 text-sm font-bold text-deshi-red">
+              <div
+                className="flex items-center gap-2 text-sm font-bold"
+                style={{ color: "var(--clr-red)", fontFamily: "'Sora', sans-serif" }}
+              >
                 <MapPin className="w-4 h-4" />
-                <span>You were caught! Guess the Location to win</span>
+                You were caught! Guess the Location to win
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <p className="text-xs text-slate-500 font-medium">
                 You can select a location ONLY ONCE. If correct, you steal the win!
               </p>
               <select
@@ -125,7 +180,7 @@ export default function VotingScreen({
                 disabled={isSubmittingGuess}
                 onChange={(e) => setSelectedLocationGuess(e.target.value)}
                 onFocus={handleInputFocus}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-deshi-blue dark:focus:border-blue-400 font-semibold disabled:opacity-50"
+                className="deshi-input deshi-input-red"
               >
                 <option value="">-- Select Location --</option>
                 {LOCATIONS.map((loc) => (
@@ -137,38 +192,69 @@ export default function VotingScreen({
               <button
                 onClick={handleSpyGuessSubmit}
                 disabled={!selectedLocationGuess || isSubmittingGuess}
-                className={`w-full ${
+                className={`w-full ${!selectedLocationGuess || isSubmittingGuess ? "" : "deshi-btn-blue shimmer-sweep"}`}
+                style={
                   !selectedLocationGuess || isSubmittingGuess
-                    ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-3.5 rounded-2xl font-bold text-sm cursor-not-allowed"
-                    : "deshi-btn-blue"
-                }`}
+                    ? {
+                        background: "rgba(226,232,240,0.8)",
+                        color: "#94a3b8",
+                        padding: "0.875rem",
+                        borderRadius: "14px",
+                        fontFamily: "'Sora', sans-serif",
+                        fontWeight: 700,
+                        fontSize: "0.875rem",
+                        cursor: "not-allowed",
+                        border: "1px solid rgba(203,213,225,0.5)",
+                      }
+                    : {}
+                }
               >
-                {isSubmittingGuess ? "Submitting Guess..." : "Submit Location Guess 🎯"}
+                {isSubmittingGuess ? "Submitting…" : "Submit Location Guess 🎯"}
               </button>
             </>
           ) : (
-            <div className="text-center p-5 space-y-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-2xl">
+            <div
+              className="text-center p-5 space-y-2 rounded-2xl"
+              style={{
+                background: "rgba(255,251,235,0.9)",
+                border: "1px solid rgba(217,119,6,0.2)",
+              }}
+            >
               <div className="text-3xl">🕵️‍♂️</div>
-              <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100">The Spy was caught!</p>
-              <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold animate-pulse">
-                Waiting for the Spy to make their final location guess…
+              <p className="text-sm font-bold text-slate-900" style={{ fontFamily: "'Sora', sans-serif" }}>
+                The Spy was caught!
               </p>
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--clr-gold)" }} />
+                <p className="text-xs text-slate-600 font-semibold">
+                  Waiting for the Spy to make their final location guess…
+                </p>
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* ── Regular voting: before all votes are in ── */}
+      {/* ── Regular voting ── */}
       {!isSpyCaught && (
         <div className="deshi-card w-full space-y-3">
-          {/* Spy's own early location-guess option */}
+          {/* Spy early guess */}
           {isSpy && !hasVoted && (
-            <div className="border border-blue-200 dark:border-slate-700 bg-blue-50 dark:bg-slate-800/80 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-2 text-sm font-bold text-deshi-blue dark:text-blue-400">
-                <MapPin className="w-4 h-4" />
-                <span>Spy Option: Guess the Location now</span>
+            <div
+              className="rounded-2xl p-4 space-y-3"
+              style={{
+                background: "rgba(239,246,255,0.8)",
+                border: "1px solid rgba(15,76,129,0.15)",
+              }}
+            >
+              <div
+                className="flex items-center gap-2 text-sm font-bold"
+                style={{ color: "var(--clr-blue)", fontFamily: "'Sora', sans-serif" }}
+              >
+                <Target className="w-4 h-4" />
+                Spy Option: Guess the Location now
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <p className="text-xs text-slate-500 font-medium">
                 Guess the location directly and win! You can choose ONLY ONCE.
               </p>
               <select
@@ -176,7 +262,7 @@ export default function VotingScreen({
                 disabled={isSubmittingGuess}
                 onChange={(e) => setSelectedLocationGuess(e.target.value)}
                 onFocus={handleInputFocus}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3.5 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-deshi-blue dark:focus:border-blue-400 font-semibold disabled:opacity-50"
+                className="deshi-input"
               >
                 <option value="">-- Select Location --</option>
                 {LOCATIONS.map((loc) => (
@@ -188,62 +274,112 @@ export default function VotingScreen({
               <button
                 onClick={handleSpyGuessSubmit}
                 disabled={!selectedLocationGuess || isSubmittingGuess}
-                className={`w-full text-sm ${
+                className={`w-full text-sm ${!selectedLocationGuess || isSubmittingGuess ? "" : "deshi-btn-blue shimmer-sweep"}`}
+                style={
                   !selectedLocationGuess || isSubmittingGuess
-                    ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-3.5 rounded-2xl font-bold cursor-not-allowed"
-                    : "deshi-btn-blue"
-                }`}
+                    ? {
+                        background: "rgba(226,232,240,0.8)",
+                        color: "#94a3b8",
+                        padding: "0.875rem",
+                        borderRadius: "14px",
+                        fontFamily: "'Sora', sans-serif",
+                        fontWeight: 700,
+                        cursor: "not-allowed",
+                        border: "1px solid rgba(203,213,225,0.5)",
+                      }
+                    : {}
+                }
               >
-                {isSubmittingGuess ? "Submitting Guess..." : "Submit Location Guess 🎯"}
+                {isSubmittingGuess ? "Submitting…" : "Submit Location Guess 🎯"}
               </button>
-              <div className="relative flex items-center gap-3">
-                <div className="flex-1 border-t border-slate-200 dark:border-slate-700" />
-                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">OR VOTE BELOW</span>
-                <div className="flex-1 border-t border-slate-200 dark:border-slate-700" />
+
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 deshi-divider" />
+                <span
+                  className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                  style={{ fontFamily: "'Sora', sans-serif" }}
+                >
+                  or vote below
+                </span>
+                <div className="flex-1 deshi-divider" />
               </div>
             </div>
           )}
 
-          <h3 className="text-xs uppercase tracking-widest font-extrabold text-slate-500 dark:text-slate-400">
+          <p
+            className="text-[10px] uppercase tracking-widest font-bold"
+            style={{ color: "#94a3b8", fontFamily: "'Sora', sans-serif" }}
+          >
             Select Suspect:
-          </h3>
+          </p>
 
           {hasVoted ? (
-            <div className="text-center p-6 space-y-2 bg-blue-50/60 dark:bg-slate-800/60 rounded-2xl border border-blue-100 dark:border-slate-800">
-              <CheckCircle className="w-10 h-10 text-deshi-blue dark:text-blue-400 mx-auto" />
-              <p className="text-sm font-extrabold text-slate-900 dark:text-white">Your Vote Has Been Submitted!</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold animate-pulse">
-                Waiting for remaining players ({totalPlayers - votedPlayersCount} left)…
+            <div
+              className="text-center p-6 space-y-2 rounded-2xl"
+              style={{
+                background: "rgba(239,246,255,0.8)",
+                border: "1px solid rgba(15,76,129,0.15)",
+              }}
+            >
+              <CheckCircle className="w-10 h-10 mx-auto" style={{ color: "var(--clr-blue)" }} />
+              <p className="text-sm font-bold text-slate-900 dark:text-white" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Your Vote Has Been Submitted!
               </p>
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--clr-blue)" }} />
+                <p className="text-xs text-slate-500 font-semibold">
+                  Waiting for {totalPlayers - votedPlayersCount} more player{totalPlayers - votedPlayersCount !== 1 ? "s" : ""}…
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
-              {players.map((p) => {
+              {players.map((p, idx) => {
                 const isMe = p.id === currentPlayerId;
                 const isSelected = selectedTargetId === p.id;
-
                 return (
                   <button
                     key={p.id}
                     disabled={isMe}
-                    onClick={() => setSelectedTargetId(p.id)}
-                    className={`w-full p-3.5 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
-                      isMe
-                        ? "opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800"
-                        : isSelected
-                        ? "bg-red-50 dark:bg-red-950/60 border-deshi-red text-slate-900 dark:text-white font-bold shadow-md"
-                        : "bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600"
-                    }`}
+                    onClick={() => { sfx.play("click"); setSelectedTargetId(p.id); }}
+                    className="w-full flex items-center justify-between transition-all cursor-pointer"
+                    style={{
+                      padding: "0.875rem 1rem",
+                      borderRadius: "16px",
+                      border: isSelected
+                        ? "2px solid rgba(220,38,38,0.45)"
+                        : isMe
+                        ? "1px solid rgba(226,232,240,0.5)"
+                        : "1px solid rgba(226,232,240,0.7)",
+                      background: isSelected
+                        ? "rgba(254,242,242,0.95)"
+                        : isMe
+                        ? "rgba(248,250,252,0.4)"
+                        : "rgba(248,250,252,0.7)",
+                      opacity: isMe ? 0.5 : 1,
+                      cursor: isMe ? "not-allowed" : "pointer",
+                      boxShadow: isSelected ? "0 4px 16px rgba(220,38,38,0.12)" : "none",
+                      transform: isSelected ? "scale(1.01)" : "scale(1)",
+                    }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-deshi-blue dark:bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                      <div
+                        className="deshi-avatar w-9 h-9 rounded-xl text-sm"
+                        style={{
+                          background: isSelected
+                            ? "linear-gradient(135deg, #b91c1c, #DC2626)"
+                            : avatarColors[idx % avatarColors.length],
+                          fontFamily: "'Sora', sans-serif",
+                        }}
+                      >
                         {p.name.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-sm font-semibold">
-                        {p.name} {isMe && "(You)"}
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        {p.name} {isMe && <span className="text-xs text-slate-400">(You)</span>}
                       </span>
                     </div>
-                    {isSelected && <Vote className="w-5 h-5 text-deshi-red" />}
+                    {isSelected && <Vote className="w-5 h-5" style={{ color: "var(--clr-red)" }} />}
                   </button>
                 );
               })}
@@ -251,11 +387,22 @@ export default function VotingScreen({
               <button
                 onClick={handleVoteSubmit}
                 disabled={!selectedTargetId}
-                className={`w-full mt-3 ${
+                className={`w-full mt-2 ${!selectedTargetId ? "" : "deshi-btn-red shimmer-sweep"}`}
+                style={
                   !selectedTargetId
-                    ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-3.5 rounded-2xl font-bold text-sm cursor-not-allowed"
-                    : "deshi-btn-red"
-                }`}
+                    ? {
+                        background: "rgba(226,232,240,0.8)",
+                        color: "#94a3b8",
+                        padding: "1rem",
+                        borderRadius: "14px",
+                        fontFamily: "'Sora', sans-serif",
+                        fontWeight: 700,
+                        fontSize: "0.875rem",
+                        cursor: "not-allowed",
+                        border: "1px solid rgba(203,213,225,0.5)",
+                      }
+                    : {}
+                }
               >
                 Confirm Vote 🗳️
               </button>

@@ -1,34 +1,45 @@
 "use client";
 
 /**
- * useSounds — a lightweight Web Audio API sound engine.
- * Returns a play(soundName) function.
- * Sounds are synthesized so no audio files are needed.
+ * Robust Web Audio API sound engine using a single reusable AudioContext instance.
+ * Sounds are synthesized so no external audio files are required.
  */
 export function createSoundEngine(muted = false) {
   let _muted = muted;
+  let _ctx = null;
 
   function getCtx() {
+    if (typeof window === "undefined") return null;
     try {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      return Ctx ? new Ctx() : null;
-    } catch { return null; }
+      if (!_ctx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) _ctx = new Ctx();
+      }
+      if (_ctx && _ctx.state === "suspended") {
+        _ctx.resume().catch(() => {});
+      }
+      return _ctx;
+    } catch (e) {
+      return null;
+    }
   }
 
   function beep(freq, type, duration, volume = 0.08, rampTo = 0.001) {
     if (_muted) return;
     const ctx = getCtx();
     if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    gain.gain.setValueAtTime(volume, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(rampTo, ctx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + duration);
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(rampTo, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    } catch (e) {}
   }
 
   function chord(notes, type, duration, volume) {
@@ -53,17 +64,24 @@ export function createSoundEngine(muted = false) {
   };
 
   return {
-    play: (name) => { if (sounds[name]) sounds[name](); },
+    play: (name) => {
+      try {
+        if (sounds[name]) sounds[name]();
+      } catch (e) {}
+    },
     setMuted: (v) => { _muted = v; },
     isMuted: () => _muted,
   };
 }
 
-// Singleton engine shared across all components
 let _engine = null;
 
 export function getSoundEngine() {
-  if (typeof window === "undefined") return { play: () => {}, setMuted: () => {}, isMuted: () => true };
-  if (!_engine) _engine = createSoundEngine(false);
+  if (typeof window === "undefined") {
+    return { play: () => {}, setMuted: () => {}, isMuted: () => true };
+  }
+  if (!_engine) {
+    _engine = createSoundEngine(false);
+  }
   return _engine;
 }

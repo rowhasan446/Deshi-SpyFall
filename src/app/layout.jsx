@@ -42,43 +42,100 @@ export default function RootLayout({ children }) {
           }}
         />
       </head>
-      <body className="antialiased min-h-[100dvh] flex flex-col bg-slate-50 dark:bg-[#0B0F17] text-slate-900 dark:text-slate-100 relative overflow-x-hidden transition-colors duration-300">
+      <body className="antialiased min-h-[100dvh] flex flex-col bg-slate-50 dark:bg-[#080D16] text-slate-900 dark:text-slate-100 relative overflow-x-hidden transition-colors duration-300">
 
-        {/* Rickshaw Art Background Collage */}
+        {/* Rickshaw Art Background */}
         <div className="bg-rickshaw-art" />
 
-        {/* Top accent stripe — Bangladeshi flag colours */}
-        <div className="relative z-10 w-full flex shrink-0">
-          <div className="h-1.5 bg-deshi-green flex-1" style={{ backgroundColor: '#006A4E' }} />
-          <div className="h-1.5 bg-deshi-red flex-1" style={{ backgroundColor: '#DC2626' }} />
+        {/* Subtle radial vignette overlay */}
+        <div
+          className="fixed inset-0 pointer-events-none z-0"
+          style={{
+            background: "radial-gradient(ellipse at 50% 0%, rgba(15,76,129,0.04) 0%, transparent 70%)",
+          }}
+        />
+
+        {/* Bangladeshi Flag Accent Stripe */}
+        <div className="relative z-10 w-full flex shrink-0" style={{ height: "2px" }}>
+          <div className="flex-1" style={{ background: "linear-gradient(90deg, #005a41, #006A4E)" }} />
+          <div className="flex-1" style={{ background: "linear-gradient(90deg, #DC2626, #b91c1c)" }} />
         </div>
 
-        {/* Sticky page header */}
-        <header className="relative z-20 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800 px-5 py-3 flex items-center justify-between shadow-sm transition-colors duration-300 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xl">🕵️‍♂️</span>
-            <div>
-              <span className="text-base font-black tracking-tight text-slate-900 dark:text-white">Deshi </span>
-              <span className="text-base font-black text-deshi-red">Spyfall</span>
+        {/* ── Sticky Header ── */}
+        <header className="relative z-20 w-full shrink-0 transition-colors duration-300">
+          <div className="deshi-header-glass w-full px-5 py-3 flex items-center justify-between">
+            {/* Brand */}
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"
+                style={{
+                  background: "linear-gradient(135deg, #0F4C81 0%, #1a6bb5 100%)",
+                  boxShadow: "0 2px 10px rgba(15,76,129,0.3)",
+                }}
+              >
+                🕵️‍♂️
+              </div>
+              <div className="flex flex-col leading-none">
+                <div className="flex items-baseline gap-1">
+                  <span
+                    className="text-base font-black tracking-tight text-slate-900 dark:text-white"
+                    style={{ fontFamily: "'Sora', sans-serif" }}
+                  >
+                    Deshi
+                  </span>
+                  <span
+                    className="text-base font-black"
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      background: "linear-gradient(135deg, #DC2626, #ef4444)",
+                      WebkitBackgroundClip: "text",
+                      backgroundClip: "text",
+                      color: "transparent",
+                    }}
+                  >
+                    Spyfall
+                  </span>
+                </div>
+                <span className="text-[9px] font-bold tracking-widest text-slate-400 dark:text-slate-500 uppercase mt-px">
+                  Party Game
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <span className="text-[11px] font-bold text-deshi-blue dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 px-2.5 py-1 rounded-full">
-              Party Game
-            </span>
+
+            {/* Right controls */}
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <div
+                className="deshi-badge-blue"
+                style={{ fontSize: "0.65rem" }}
+              >
+                🇧🇩 Deshi
+              </div>
+            </div>
           </div>
         </header>
 
-        {/* Main content with generous mobile padding for virtual keyboard scroll */}
+        {/* Main content */}
         <main className="relative z-10 flex-1 flex flex-col justify-center items-center p-4 pb-[60vh] sm:pb-12 max-w-md mx-auto w-full overflow-y-auto">
           {children}
         </main>
 
-        {/* Sticky Footer */}
-        <footer className="sticky bottom-0 z-30 w-full text-center py-2.5 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 border-t border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-lg transition-colors duration-300 shrink-0">
-          Developed by{" "}
-          <span className="font-extrabold text-deshi-blue dark:text-blue-400">Rownak</span>
+        {/* ── Sticky Footer ── */}
+        <footer className="deshi-footer-glass sticky bottom-0 z-30 w-full py-2.5 px-4 shrink-0 transition-colors duration-300">
+          <p className="text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
+            Crafted with ❤️ by{" "}
+            <span
+              className="font-extrabold"
+              style={{
+                background: "linear-gradient(90deg, #0F4C81, #2563EB)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              Rownak
+            </span>
+          </p>
         </footer>
       </body>
     </html>

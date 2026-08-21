@@ -484,34 +484,56 @@ export default function App() {
         />
       )}
 
-      {/* Top Quick Navigation Bar (Home, Rules & Welcome Intro buttons) */}
-      <div className="w-full flex items-center justify-between mb-3 px-1">
+      {/* Top Quick Navigation Bar */}
+      <div
+        className="w-full flex items-center justify-between mb-4 px-1 py-1.5 rounded-2xl"
+        style={{
+          background: "var(--glass-bg)",
+          border: "1px solid var(--glass-border)",
+          boxShadow: "0 2px 12px rgba(15,76,129,0.06)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+        }}
+      >
         <button
           onClick={handleLeaveRoom}
-          className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-deshi-blue dark:hover:text-blue-400 bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-sm transition-all cursor-pointer"
+          className="flex items-center gap-1.5 cursor-pointer transition-all group px-3 py-1.5 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800"
           title="Return to Home Screen"
         >
-          <Home className="w-3.5 h-3.5" />
-          <span>Home</span>
+          <div
+            className="w-6 h-6 rounded-lg flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg, #0F4C81, #2563EB)" }}
+          >
+            <Home className="w-3 h-3 text-white" />
+          </div>
+          <span className="text-xs font-bold text-slate-600 dark:text-slate-300 group-hover:text-deshi-blue dark:group-hover:text-blue-400" style={{ fontFamily: "'Sora', sans-serif" }}>
+            Home
+          </span>
         </button>
 
         <div className="flex items-center gap-1.5">
           <button
             onClick={handleReplayWelcome}
-            className="flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900 px-2.5 py-1.5 rounded-xl shadow-sm hover:bg-amber-100 dark:hover:bg-amber-900/80 transition-all cursor-pointer"
+            className="flex items-center gap-1 cursor-pointer transition-all px-2.5 py-1.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/40 group"
             title="Watch Welcome & Intro Animation"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>স্বাগতম</span>
+            <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 group-hover:text-amber-600" style={{ fontFamily: "'Sora', sans-serif" }}>
+              স্বাগতম
+            </span>
           </button>
+
+          <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
 
           <button
             onClick={() => setIsRulesOpen(true)}
-            className="flex items-center gap-1.5 text-xs font-bold text-deshi-blue dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 px-3 py-1.5 rounded-xl shadow-sm hover:bg-blue-100 dark:hover:bg-blue-900/80 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 cursor-pointer transition-all px-3 py-1.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 group"
             title="View Game Rules & Instructions"
           >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Rules / নিয়মাবলী</span>
+            <HelpCircle className="w-3.5 h-3.5 text-deshi-blue dark:text-blue-400" />
+            <span className="text-xs font-bold text-deshi-blue dark:text-blue-400" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Rules
+            </span>
           </button>
         </div>
       </div>
